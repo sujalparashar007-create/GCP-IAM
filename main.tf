@@ -43,27 +43,70 @@ module "api_services" {
 }
 
 # ------------------------------------------------------------------------------
-# IAM: Role-based access control per team
+# IAM: Granular role-based access control per team (least privilege)
 # ------------------------------------------------------------------------------
-# Each project gets role bindings aligned with the responsible team.
-#   appdev02      → Development Team (editor) + DevOps (viewer)
-#   appqa02       → QA Team (viewer) + DevOps (viewer)
-#   sharedinfra02 → DevOps Team (editor)
+# Production Note: In enterprise environments, use Google Groups instead of
+# individual users.
+#
+#   Development Team (appdev02):
+#     Can: view resources, read logs, deploy apps to GKE, push images to
+#          Artifact Registry, trigger Cloud Build, read Cloud Storage.
+#     Cannot: modify IAM, create VPCs, delete projects, create service
+#             accounts, modify firewall rules.
+#
+#   QA Team (appqa02):
+#     Can: view resources, read logs, view Monitoring dashboards, read
+#          Cloud Storage, access test environments.
+#     Cannot: deploy infrastructure, change IAM, delete resources,
+#             modify networking.
+#
+#   DevOps Team (sharedinfra02):
+#     Can: create Compute Engine VMs, create GKE clusters, manage networking,
+#          create service accounts, configure IAM, manage Cloud DNS,
+#          configure Cloud Build/Monitoring/Logging, manage Cloud Storage,
+#          deploy infrastructure via Terraform.
+#     Plus viewer access on dev & qa projects for operational visibility.
+#
+#   Scalability: the bindings map is iterated via for_each in module "iam",
+#   so adding new projects or teams is a data-only change.
 
 locals {
   iam_bindings = {
+    # Development Team on appdev02 (+ DevOps viewer)
     appdev02 = {
-      "roles/editor" = ["user:${var.team_members.development}"]
-      "roles/viewer" = ["user:${var.team_members.devops}"]
+      "roles/viewer" = [
+        "user:${var.team_members.development}",
+        "user:${var.team_members.devops}",
+      ]
+      "roles/logging.viewer"           = ["user:${var.team_members.development}"]
+      "roles/container.developer"      = ["user:${var.team_members.development}"]
+      "roles/artifactregistry.writer"  = ["user:${var.team_members.development}"]
+      "roles/cloudbuild.builds.editor" = ["user:${var.team_members.development}"]
+      "roles/storage.objectViewer"     = ["user:${var.team_members.development}"]
     }
+
+    # QA Team on appqa02 (+ DevOps viewer)
     appqa02 = {
       "roles/viewer" = [
         "user:${var.team_members.qa}",
         "user:${var.team_members.devops}",
       ]
+      "roles/logging.viewer"       = ["user:${var.team_members.qa}"]
+      "roles/monitoring.viewer"    = ["user:${var.team_members.qa}"]
+      "roles/storage.objectViewer" = ["user:${var.team_members.qa}"]
     }
+
+    # DevOps Team on sharedinfra02
     sharedinfra02 = {
-      "roles/editor" = ["user:${var.team_members.devops}"]
+      "roles/compute.admin"                   = ["user:${var.team_members.devops}"]
+      "roles/container.admin"                 = ["user:${var.team_members.devops}"]
+      "roles/iam.serviceAccountAdmin"         = ["user:${var.team_members.devops}"]
+      "roles/resourcemanager.projectIamAdmin" = ["user:${var.team_members.devops}"]
+      "roles/dns.admin"                       = ["user:${var.team_members.devops}"]
+      "roles/cloudbuild.builds.editor"        = ["user:${var.team_members.devops}"]
+      "roles/monitoring.admin"                = ["user:${var.team_members.devops}"]
+      "roles/logging.admin"                   = ["user:${var.team_members.devops}"]
+      "roles/storage.admin"                   = ["user:${var.team_members.devops}"]
     }
   }
 }
@@ -73,9 +116,9 @@ locals {
 # ------------------------------------------------------------------------------
 # Each project gets three service accounts. Roles follow least privilege:
 #
-#   terraform-sa   → Infrastructure provisioning (compute, storage, IAM, GKE, etc.)
-#   cloudbuild-sa  → CI/CD builds (Cloud Build + artifact access + logging)
-#   gke-sa         → GKE cluster management (container + logging + monitoring)
+#   terraform-sa   -> Infrastructure provisioning (compute, storage, IAM, GKE, etc.)
+#   cloudbuild-sa  -> CI/CD builds (Cloud Build + artifact access + logging)
+#   gke-sa         -> GKE cluster management (container + logging + monitoring)
 
 locals {
   service_accounts = {
@@ -141,5 +184,3 @@ module "iam" {
   project_id = module.project[each.key].project_id
   bindings   = try(local.iam_bindings[each.key], {})
 }
-
-
