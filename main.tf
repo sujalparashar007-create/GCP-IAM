@@ -42,3 +42,39 @@ module "api_services" {
   #services = each.key == "sharedinfra01" ? ["iam.googleapis.com", "storage.googleapis.com"] : null
 }
 
+# ------------------------------------------------------------------------------
+# IAM: Role-based access control per team
+# ------------------------------------------------------------------------------
+# Each project gets role bindings aligned with the responsible team.
+#   appdev02      → Development Team (editor) + DevOps (viewer)
+#   appqa02       → QA Team (viewer) + DevOps (viewer)
+#   sharedinfra02 → DevOps Team (editor)
+
+locals {
+  iam_bindings = {
+    appdev02 = {
+      "roles/editor" = ["user:${var.team_members.development}"]
+      "roles/viewer" = ["user:${var.team_members.devops}"]
+    }
+    appqa02 = {
+      "roles/viewer" = [
+        "user:${var.team_members.qa}",
+        "user:${var.team_members.devops}",
+      ]
+    }
+    sharedinfra02 = {
+      "roles/editor" = ["user:${var.team_members.devops}"]
+    }
+  }
+}
+
+module "iam" {
+  for_each = local.project_list
+
+  source = "./modules/iam"
+
+  project_id = module.project[each.key].project_id
+  bindings   = try(local.iam_bindings[each.key], {})
+}
+
+

@@ -18,3 +18,9 @@ output "enabled_apis" {
   value       = { for k, p in local.project_list : k => module.api_services[k].service_names }
 }
 
+output "iam_assignments" {
+  description = "Map of logical project name to list of {role, member} IAM bindings."
+  value       = { for k, p in local.project_list : k => try(module.iam[k].assignments, []) }
+}
+
+
