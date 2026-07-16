@@ -1,4 +1,4 @@
-﻿variable "org_id" {
+variable "org_id" {
   description = "GCP Organization ID to use as the parent for all projects."
   type        = string
 }
@@ -11,7 +11,7 @@ variable "billing_account_id" {
 variable "project_prefix" {
   description = "Prefix applied to each project ID. Must be lowercase, 6-30 chars, start with a letter."
   type        = string
-  default     = "iam-01"
+  default     = "iam-02"
 }
 
 variable "region" {
@@ -28,18 +28,18 @@ variable "projects" {
     team         = string
   }))
   default = {
-    appdev01 = {
-      display_name = "appdev01"
+    appdev02 = {
+      display_name = "appdev02"
       environment  = "dev"
       team         = "platform"
     }
-    appqa01 = {
-      display_name = "appqa01"
+    appqa02 = {
+      display_name = "appqa02"
       environment  = "qa"
       team         = "platform"
     }
-    sharedinfra01 = {
-      display_name = "sharedinfra01"
+    sharedinfra02 = {
+      display_name = "sharedinfra02"
       environment  = "shared"
       team         = "platform"
     }

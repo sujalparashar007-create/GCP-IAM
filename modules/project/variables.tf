@@ -1,4 +1,4 @@
-﻿variable "org_id" {
+variable "org_id" {
   description = "GCP Organization ID to use as the parent for the project."
   type        = string
 }

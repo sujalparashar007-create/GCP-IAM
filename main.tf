@@ -1,4 +1,4 @@
-﻿# Root configuration: loops over the provided projects and calls the reusable project module once per project.
+# Root configuration: loops over the provided projects and calls the reusable project module once per project.
 
 # The root is responsible for composing the final project_id (prefix + display_name)
 # and the labels map. The module itself is generic and creates a single GCP project.
@@ -28,3 +28,17 @@ module "project" {
   display_name       = each.value.display_name
   labels             = each.value.labels
 }
+
+# ------------------------------------------------------------------------------
+# Enable required GCP APIs on each project
+# ------------------------------------------------------------------------------
+module "api_services" {
+  for_each = local.project_list
+
+  source = "./modules/api-services"
+
+  project_id = module.project[each.key].project_id
+  # Optional: override default APIs
+  #services = each.key == "sharedinfra01" ? ["iam.googleapis.com", "storage.googleapis.com"] : null
+}
+

@@ -1,4 +1,4 @@
-﻿output "project_id" {
+output "project_id" {
   description = "The GCP project ID."
   value       = google_project.this.project_id
 }
