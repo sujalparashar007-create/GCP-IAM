@@ -1,0 +1,14 @@
+﻿output "project_ids" {
+  description = "Map of logical project name to created GCP project ID."
+  value       = { for k, p in local.project_list : k => module.project[k].project_id }
+}
+
+output "project_numbers" {
+  description = "Map of logical project name to created GCP project number."
+  value       = { for k, p in local.project_list : k => module.project[k].project_number }
+}
+
+output "projects" {
+  description = "Full google_project objects for the created projects."
+  value       = { for k, p in local.project_list : k => module.project[k].project }
+}
