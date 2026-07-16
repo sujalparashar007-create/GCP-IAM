@@ -1,7 +1,7 @@
-﻿# ==============================================================================
-# terraform.tfvars.example — Representative user documentation
 # ==============================================================================
-# Copy to terraform.tfvars and replace placeholders with real Google accounts.
+# terraform.tfvars.example - Representative user documentation
+# ==============================================================================
+# Copy to terraform.tfvars and replace placeholders with real values.
 # ==============================================================================
 
 org_id             = "XXXXXXXXXXXX"
@@ -9,30 +9,8 @@ billing_account_id = "XXXXXX-XXXXXX-XXXXXX"
 project_prefix     = "iam-01"
 region             = "us-east1"
 
-# ------------------------------------------------------------------------------
-# IAM: Representative users per team
-# ------------------------------------------------------------------------------
-# Each team has two representative user slots per best-practice.
-#   Development Team → dev1, dev2
-#   QA Team          → qa1,  qa2
-#   DevOps Team      → ops1, ops2
-#
-# When only a single real Google account is available, reuse it as the primary
-# user and leave the secondary as a placeholder. The IAM binding for the
-# placeholder will be created but will have no effect until a real Google
-# account replaces it.
-# ------------------------------------------------------------------------------
-team_members = {
-  development = [
-    "dev1@gmail.com",  # ← replace with real account
-    "dev2@gmail.com",  # ← replace with real account
-  ]
-  qa = [
-    "qa1@gmail.com",   # ← replace with real account
-    "qa2@gmail.com",   # ← replace with real account
-  ]
-  devops = [
-    "ops1@gmail.com",  # ← replace with real account
-    "ops2@gmail.com",  # ← replace with real account
-  ]
-}
+# ==============================================================================
+# IAM: Team members are now defined in users.tf (not in terraform.tfvars)
+# ==============================================================================
+# Edit users.tf to add/remove team members.
+# Edit team-roles.tf to change which roles each team receives.

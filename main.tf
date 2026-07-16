@@ -71,42 +71,20 @@ module "api_services" {
 #   so adding new projects or teams is a data-only change.
 
 locals {
+  # Dynamically generate IAM bindings by cross-referencing team_roles,
+  # team_members, and project_list. Every team gets their role set on every project.
   iam_bindings = {
-    # Development Team on appdev02 (+ DevOps viewer)
-    appdev02 = {
-      "roles/viewer" = [
-        "user:${var.team_members.development}",
-        "user:${var.team_members.devops}",
-      ]
-      "roles/logging.viewer"           = ["user:${var.team_members.development}"]
-      "roles/container.developer"      = ["user:${var.team_members.development}"]
-      "roles/artifactregistry.writer"  = ["user:${var.team_members.development}"]
-      "roles/cloudbuild.builds.editor" = ["user:${var.team_members.development}"]
-      "roles/storage.objectViewer"     = ["user:${var.team_members.development}"]
-    }
-
-    # QA Team on appqa02 (+ DevOps viewer)
-    appqa02 = {
-      "roles/viewer" = [
-        "user:${var.team_members.qa}",
-        "user:${var.team_members.devops}",
-      ]
-      "roles/logging.viewer"       = ["user:${var.team_members.qa}"]
-      "roles/monitoring.viewer"    = ["user:${var.team_members.qa}"]
-      "roles/storage.objectViewer" = ["user:${var.team_members.qa}"]
-    }
-
-    # DevOps Team on sharedinfra02
-    sharedinfra02 = {
-      "roles/compute.admin"                   = ["user:${var.team_members.devops}"]
-      "roles/container.admin"                 = ["user:${var.team_members.devops}"]
-      "roles/iam.serviceAccountAdmin"         = ["user:${var.team_members.devops}"]
-      "roles/resourcemanager.projectIamAdmin" = ["user:${var.team_members.devops}"]
-      "roles/dns.admin"                       = ["user:${var.team_members.devops}"]
-      "roles/cloudbuild.builds.editor"        = ["user:${var.team_members.devops}"]
-      "roles/monitoring.admin"                = ["user:${var.team_members.devops}"]
-      "roles/logging.admin"                   = ["user:${var.team_members.devops}"]
-      "roles/storage.admin"                   = ["user:${var.team_members.devops}"]
+    for pk, p in local.project_list : pk => {
+      for role in distinct(flatten([
+        for team, roles in local.team_roles : roles
+      ])) :
+      role => flatten([
+        for team, roles in local.team_roles : [
+          for email in local.team_members[team] :
+          "user:${email}"
+          if contains(roles, role)
+        ]
+      ])
     }
   }
 }
@@ -119,35 +97,10 @@ locals {
 #   terraform-sa   -> Infrastructure provisioning (compute, storage, IAM, GKE, etc.)
 #   cloudbuild-sa  -> CI/CD builds (Cloud Build + artifact access + logging)
 #   gke-sa         -> GKE cluster management (container + logging + monitoring)
+#
+# Service account definitions live in service-accounts.tf
 
 locals {
-  service_accounts = {
-    terraform-sa = {
-      roles = [
-        "roles/compute.admin",
-        "roles/storage.admin",
-        "roles/iam.serviceAccountUser",
-        "roles/container.admin",
-        "roles/artifactregistry.admin",
-        "roles/cloudbuild.builds.editor",
-      ]
-    }
-    cloudbuild-sa = {
-      roles = [
-        "roles/cloudbuild.builds.builder",
-        "roles/storage.objectViewer",
-        "roles/logging.logWriter",
-        "roles/artifactregistry.writer",
-      ]
-    }
-    gke-sa = {
-      roles = [
-        "roles/container.admin",
-        "roles/logging.logWriter",
-        "roles/monitoring.metricWriter",
-      ]
-    }
-  }
   sa_per_project = merge([
     for pk, p in local.project_list : {
       for sa_name, sa_def in local.service_accounts :

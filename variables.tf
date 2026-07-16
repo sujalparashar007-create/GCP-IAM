@@ -46,25 +46,3 @@ variable "projects" {
   }
 }
 
-# ------------------------------------------------------------------------------
-# IAM: Team members for RBAC (hypothetical — replace with real emails)
-# ------------------------------------------------------------------------------
-# These represent three logical teams:
-#   Development Team → dev project (editor)
-#   QA Team          → qa project (viewer)
-#   DevOps Team      → shared-infra (editor) + viewer on dev/qa
-
-variable "team_members" {
-  description = "IAM user emails representing the three logical teams."
-  type = object({
-    development = string
-    qa          = string
-    devops      = string
-  })
-  default = {
-    development = "dev-user@example.com"
-    qa          = "qa-user@example.com"
-    devops      = "devops-user@example.com"
-  }
-}
-
