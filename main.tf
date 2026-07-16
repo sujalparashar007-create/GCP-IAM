@@ -68,7 +68,72 @@ locals {
   }
 }
 
+# ------------------------------------------------------------------------------
+# Service Accounts: per-project SA with minimum required permissions
+# ------------------------------------------------------------------------------
+# Each project gets three service accounts. Roles follow least privilege:
+#
+#   terraform-sa   → Infrastructure provisioning (compute, storage, IAM, GKE, etc.)
+#   cloudbuild-sa  → CI/CD builds (Cloud Build + artifact access + logging)
+#   gke-sa         → GKE cluster management (container + logging + monitoring)
+
+locals {
+  service_accounts = {
+    terraform-sa = {
+      roles = [
+        "roles/compute.admin",
+        "roles/storage.admin",
+        "roles/iam.serviceAccountUser",
+        "roles/container.admin",
+        "roles/artifactregistry.admin",
+        "roles/cloudbuild.builds.editor",
+      ]
+    }
+    cloudbuild-sa = {
+      roles = [
+        "roles/cloudbuild.builds.builder",
+        "roles/storage.objectViewer",
+        "roles/logging.logWriter",
+        "roles/artifactregistry.writer",
+      ]
+    }
+    gke-sa = {
+      roles = [
+        "roles/container.admin",
+        "roles/logging.logWriter",
+        "roles/monitoring.metricWriter",
+      ]
+    }
+  }
+  sa_per_project = merge([
+    for pk, p in local.project_list : {
+      for sa_name, sa_def in local.service_accounts :
+      "${pk}__${sa_name}" => {
+        project_id   = module.project[pk].project_id
+        account_id   = sa_name
+        display_name = "${sa_name} (${p.display_name})"
+        description  = "Service account for ${sa_def.roles[0]} in ${p.display_name}"
+        roles        = sa_def.roles
+      }
+    }
+  ]...)
+}
+
+module "service_account" {
+  for_each = local.sa_per_project
+  source   = "./modules/service-account"
+
+  project_id   = each.value.project_id
+  account_id   = each.value.account_id
+  display_name = each.value.display_name
+  description  = each.value.description
+  roles        = each.value.roles
+
+  depends_on = [module.api_services]
+}
+
 module "iam" {
+
   for_each = local.project_list
 
   source = "./modules/iam"

@@ -24,3 +24,27 @@ output "iam_assignments" {
 }
 
 
+# ------------------------------------------------------------------------------
+# Service Account outputs
+# ------------------------------------------------------------------------------
+output "service_account_emails" {
+  description = "Map of 'project__sa-name' → full SA email."
+  value       = { for k, sa in module.service_account : k => sa.email }
+}
+
+output "service_accounts" {
+  description = "All service account resources keyed by 'project__sa-name'."
+  value       = { for k, sa in module.service_account : k => sa.service_account }
+}
+
+output "service_accounts_by_project" {
+  description = "Service account emails grouped by logical project name."
+  value = {
+    for pk, p in local.project_list : pk => {
+      for sa_name, sa_def in local.service_accounts :
+      sa_name => module.service_account["${pk}__${sa_name}"].email
+    }
+  }
+}
+
+
