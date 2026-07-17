@@ -71,15 +71,31 @@ module "api_services" {
 #   so adding new projects or teams is a data-only change.
 
 locals {
-  # Dynamically generate IAM bindings by cross-referencing team_roles,
-  # team_members, and project_list. Every team gets their role set on every project.
-  iam_bindings = {
+  # Dynamically generate IAM bindings by cross-referencing project-specific
+  # team_roles, team_members, and project_list.
+  # Every team gets its configured role set on its corresponding project.
+
+  # Resolve custom: prefixed role references to full GCP custom role paths.
+  # Example: custom:applicationSupport -> projects/iam-02-appqa02/roles/applicationSupport
+  resolved_iam_roles = {
     for pk, p in local.project_list : pk => {
       for role in distinct(flatten([
-        for team, roles in local.team_roles : roles
+        for team, roles in local.team_roles[pk] : roles
+        ])) : role => (
+        can(regex("^custom:", role))
+        ? "projects/${module.project[pk].project_id}/roles/${replace(role, "custom:", "")}"
+        : role
+      )
+    }
+  }
+  iam_bindings = {
+
+    for pk, p in local.project_list : pk => {
+      for role in distinct(flatten([
+        for team, roles in local.team_roles[pk] : roles
       ])) :
-      role => flatten([
-        for team, roles in local.team_roles : [
+      local.resolved_iam_roles[pk][role] => flatten([
+        for team, roles in local.team_roles[pk] : [
           for email in local.team_members[team] :
           "user:${email}"
           if contains(roles, role)
@@ -136,6 +152,8 @@ module "iam" {
 
   project_id = module.project[each.key].project_id
   bindings   = try(local.iam_bindings[each.key], {})
+
+  depends_on = [module.custom_roles]
 }
 
 # ==============================================================================
@@ -147,7 +165,7 @@ module "custom_roles" {
 
   for_each = local.custom_roles
 
-  project_id  = module.project[each.value.projects[0]].project_id
+  project_id = module.project[each.value.projects[0]].project_id
 
   role_id     = each.value.role_id
   title       = each.value.title
