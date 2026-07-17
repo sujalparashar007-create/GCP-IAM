@@ -144,6 +144,21 @@ module "service_account" {
   depends_on = [module.api_services]
 }
 
+# ==============================================================================
+# Service Account Impersonation
+# ==============================================================================
+# Only DevOps team members can impersonate terraform-sa.
+# Dev and QA users are excluded from impersonation on all service accounts.
+
+resource "google_service_account_iam_binding" "terraform_impersonation" {
+  for_each = local.project_list
+
+  service_account_id = module.service_account["${each.key}__terraform-sa"].service_account.name
+  role               = local.sa_impersonation["terraform-sa"].role
+
+  members = local.sa_impersonation["terraform-sa"].members
+}
+
 module "iam" {
 
   for_each = local.project_list

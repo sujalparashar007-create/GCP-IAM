@@ -66,3 +66,14 @@ output "conditional_iam_resources" {
     for pk, p in local.project_list : pk => try(module.iam_conditions[pk].conditional_bindings, {})
   }
 }
+
+# ------------------------------------------------------------------------------
+# Service Account Impersonation outputs
+# ------------------------------------------------------------------------------
+
+output "impersonation_bindings" {
+  description = "Map of project name to terraform-sa impersonation binding (DevOps only)"
+  value = {
+    for pk, p in local.project_list : pk => google_service_account_iam_binding.terraform_impersonation[pk]
+  }
+}
