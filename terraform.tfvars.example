@@ -1,0 +1,16 @@
+# ==============================================================================
+# terraform.tfvars.example - Representative user documentation
+# ==============================================================================
+# Copy to terraform.tfvars and replace placeholders with real values.
+# ==============================================================================
+
+org_id             = "XXXXXXXXXXXX"
+billing_account_id = "XXXXXX-XXXXXX-XXXXXX"
+project_prefix     = "iam-01"
+region             = "us-east1"
+
+# ==============================================================================
+# IAM: Team members are now defined in users.tf (not in terraform.tfvars)
+# ==============================================================================
+# Edit users.tf to add/remove team members.
+# Edit team-roles.tf to change which roles each team receives.
