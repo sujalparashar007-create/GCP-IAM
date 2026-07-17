@@ -75,15 +75,15 @@ locals {
   # team_roles, team_members, and project_list.
   # Every team gets its configured role set on its corresponding project.
 
-  # Resolve custom: prefixed role references to full GCP custom role paths.
-  # Example: custom:applicationSupport -> projects/iam-02-appqa02/roles/applicationSupport
+  # Resolve custom role references to full GCP role paths using module outputs.
+  # Any role name matching a key in custom_roles.tf is resolved via module.custom_roles[key].name
   resolved_iam_roles = {
     for pk, p in local.project_list : pk => {
       for role in distinct(flatten([
         for team, roles in local.team_roles[pk] : roles
         ])) : role => (
-        can(regex("^custom:", role))
-        ? "projects/${module.project[pk].project_id}/roles/${replace(role, "custom:", "")}"
+        contains(keys(local.custom_roles), role)
+        ? module.custom_roles[role].name
         : role
       )
     }

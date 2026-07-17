@@ -50,7 +50,7 @@ locals {
         "roles/monitoring.viewer",
         "roles/storage.objectViewer",
         # Custom IAM Role
-        "custom:applicationSupport",
+        "applicationSupport",
       ]
 
       devops = [
