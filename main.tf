@@ -157,6 +157,21 @@ module "iam" {
 }
 
 # ==============================================================================
+# Conditional IAM Policies (IAM Conditions)
+# ==============================================================================
+
+module "iam_conditions" {
+  for_each = local.project_list
+
+  source = "./modules/iam-conditions"
+
+  project_id           = module.project[each.key].project_id
+  conditional_bindings = try(local.conditional_iam[each.key], [])
+
+  depends_on = [module.api_services]
+}
+
+# ==============================================================================
 # Custom IAM Roles
 # ==============================================================================
 

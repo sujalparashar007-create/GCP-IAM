@@ -48,3 +48,21 @@ output "service_accounts_by_project" {
 }
 
 
+
+# ------------------------------------------------------------------------------
+# Conditional IAM outputs
+# ------------------------------------------------------------------------------
+
+output "conditional_iam_bindings" {
+  description = "Map of project name to conditional IAM binding summaries"
+  value = {
+    for pk, p in local.project_list : pk => try(module.iam_conditions[pk].conditions_summary, [])
+  }
+}
+
+output "conditional_iam_resources" {
+  description = "Raw google_project_iam_binding resources for IAM conditions"
+  value = {
+    for pk, p in local.project_list : pk => try(module.iam_conditions[pk].conditional_bindings, {})
+  }
+}
