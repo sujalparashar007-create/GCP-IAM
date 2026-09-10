@@ -11,7 +11,7 @@ variable "billing_account_id" {
 variable "project_prefix" {
   description = "Prefix applied to each project ID. Must be lowercase, 6-30 chars, start with a letter."
   type        = string
-  default     = "iam-02"
+  default     = "iam-01"
 }
 
 variable "region" {
